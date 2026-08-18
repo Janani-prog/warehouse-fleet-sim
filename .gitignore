@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Node / dashboard
+dashboard/node_modules/
+dashboard/dist/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Generated data (regeneratable trial logs, datasets, checkpoints)
+data/*
+!data/.gitkeep
+
+# Editor/OS
+.DS_Store
+Thumbs.db

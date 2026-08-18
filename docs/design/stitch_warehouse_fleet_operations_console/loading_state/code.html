@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fleet Monitor - Empty State</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#0066ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#832600",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "on-surface": "#1a1c1c",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb59d",
+                        "on-tertiary-fixed": "#390c00",
+                        "inverse-surface": "#2f3131",
+                        "on-secondary-container": "#656464",
+                        "surface-container-low": "#f3f3f3",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#dae1ff",
+                        "background": "#f9f9f9",
+                        "secondary": "#5f5e5e",
+                        "surface-variant": "#e2e2e2",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#474646",
+                        "surface": "#f9f9f9",
+                        "on-surface-variant": "#424656",
+                        "inverse-on-surface": "#f0f1f1",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "surface-dim": "#dadada",
+                        "tertiary-fixed": "#ffdbd0",
+                        "primary": "#0050cb",
+                        "surface-tint": "#0054d6",
+                        "outline": "#727687",
+                        "surface-container-high": "#e8e8e8",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "tertiary-container": "#cc4204",
+                        "surface-container": "#eeeeee",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b3c5ff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#fff6f4",
+                        "outline-variant": "#c2c6d8",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#e5e2e1",
+                        "tertiary": "#a33200",
+                        "on-primary-container": "#f8f7ff",
+                        "on-primary-fixed": "#001849",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e2e2e2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "row-height-md": "44px",
+                        "container-padding": "24px",
+                        "row-height-sm": "32px",
+                        "sidebar-width": "240px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "button": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "button": ["13px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "label-mono": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-sidebar-width bg-surface border-r border-outline-variant flex flex-col z-20">
+<!-- Sidebar Header -->
+<div class="p-container-padding flex items-center gap-3 border-b border-outline-variant h-row-height-md box-content">
+<img class="w-8 h-8 rounded-full bg-surface-container-high object-cover" data-alt="A minimalist digital avatar placeholder image for a System Operator in a clean, light-mode dashboard environment. Engineering aesthetic with simple geometric shapes." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjL5SIcT5znc1quNZ__-MSUMvazXOW57fL5pkgnAlharLzS-UVtilXojMSxEyw3bbFyaEAXKI2TosdW9G1FUZxpV3zidWFlpF7S_GZMD7VGq5ctGfN0W9rc1DjmyXGABtYZ7_pXK_Ww_FNOD2-uCmOaQZRRhekYrKUDCNfbllqr0XQ7svJ6SPoq6LteoCRvujeuwqrhFztpMOEenKb5qeIK6CP7aYwwobDtCa4a2TC7DQNqD-QOYlLaA"/>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold text-primary">Fleet Monitor</span>
+<span class="font-label-mono text-label-mono text-secondary">V2.4.1-Stable</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-unit">
+<ul class="flex flex-col gap-1 px-unit">
+<!-- Fleet Map (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[16px]">map</span>
+<span class="font-body-md text-body-md">Fleet Map</span>
+</a>
+</li>
+<!-- KPIs (Active) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded bg-surface-container-highest text-primary font-bold cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md">KPIs</span>
+</a>
+</li>
+<!-- Anomaly Timeline (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[16px]">timeline</span>
+<span class="font-body-md text-body-md">Anomaly Timeline</span>
+</a>
+</li>
+<!-- Agent Action Log (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[16px]">history_edu</span>
+<span class="font-body-md text-body-md">Agent Action Log</span>
+</a>
+</li>
+<!-- Causal Evaluation Report (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[16px]">assessment</span>
+<span class="font-body-md text-body-md">Causal Evaluation Report</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-theme(spacing.sidebar-width))] z-10 bg-surface border-b border-outline-variant flex justify-between items-center h-row-height-md px-container-padding">
+<!-- Brand / Product Name -->
+<div class="flex items-center gap-6">
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">Correction Loop</span>
+<!-- Navigation Links -->
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-button text-button h-row-height-md flex items-center" href="#">Scenario Selector</a>
+</nav>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button class="font-button text-button bg-primary text-on-primary px-4 py-1.5 rounded hover:bg-surface-tint transition-colors">
+                Correction Loop
+            </button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">radio_button_checked</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width pt-row-height-md w-full min-h-screen flex items-center justify-center">
+<!-- Empty State Container -->
+<div class="flex items-center justify-center text-center p-container-padding max-w-[1440px] w-full">
+<p class="font-body-md text-body-md text-secondary tracking-wide">Awaiting fleet data stream...</p>
+</div>
+</main>
+</body></html>

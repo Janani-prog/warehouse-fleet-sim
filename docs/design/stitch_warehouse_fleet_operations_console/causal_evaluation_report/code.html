@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Causal Evaluation Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#0066ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#832600",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "on-surface": "#1a1c1c",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb59d",
+                        "on-tertiary-fixed": "#390c00",
+                        "inverse-surface": "#2f3131",
+                        "on-secondary-container": "#656464",
+                        "surface-container-low": "#f3f3f3",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#dae1ff",
+                        "background": "#f9f9f9",
+                        "secondary": "#5f5e5e",
+                        "surface-variant": "#e2e2e2",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#474646",
+                        "surface": "#f9f9f9",
+                        "on-surface-variant": "#424656",
+                        "inverse-on-surface": "#f0f1f1",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "surface-dim": "#dadada",
+                        "tertiary-fixed": "#ffdbd0",
+                        "primary": "#0050cb",
+                        "surface-tint": "#0054d6",
+                        "outline": "#727687",
+                        "surface-container-high": "#e8e8e8",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "tertiary-container": "#cc4204",
+                        "surface-container": "#eeeeee",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b3c5ff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#fff6f4",
+                        "outline-variant": "#c2c6d8",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#e5e2e1",
+                        "tertiary": "#a33200",
+                        "on-primary-container": "#f8f7ff",
+                        "on-primary-fixed": "#001849",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e2e2e2"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "gutter": "16px",
+                        "row-height-md": "44px",
+                        "container-padding": "24px",
+                        "row-height-sm": "32px",
+                        "sidebar-width": "240px",
+                        "unit": "4px"
+                    },
+                    fontFamily: {
+                        "button": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-mono": ["JetBrains Mono"]
+                    },
+                    fontSize: {
+                        "button": ["13px", { lineHeight: "16px", fontWeight: "500" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-md": ["16px", { lineHeight: "24px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "headline-lg": ["20px", { lineHeight: "28px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+                        "label-mono": ["12px", { lineHeight: "16px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Base styles forcing exact fonts */
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9f9; color: #1a1c1c; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+        
+        /* Utility for strip plot data points to ensure perfect circles */
+        .data-point {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.6;
+        }
+        .data-point.accent { background-color: #0050cb; opacity: 0.8; }
+        .data-point.neutral { background-color: #5f5e5e; }
+        .median-line {
+            width: 2px;
+            height: 16px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #1a1c1c;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-background">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-full w-sidebar-width bg-surface border-r border-outline-variant flex flex-col flex-shrink-0 z-20">
+<!-- Header -->
+<div class="p-container-padding border-b border-outline-variant flex flex-col gap-unit">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Fleet Monitor</h1>
+<span class="font-label-mono text-label-mono text-secondary">V2.4.1-Stable</span>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-unit*2">
+<ul class="flex flex-col">
+<!-- Inactive Tab 1 -->
+<li>
+<a class="flex items-center gap-3 px-container-padding py-2 h-[40px] text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[18px]">map</span>
+<span class="font-body-sm text-body-sm">Fleet Map</span>
+</a>
+</li>
+<!-- Inactive Tab 2 -->
+<li>
+<a class="flex items-center gap-3 px-container-padding py-2 h-[40px] text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+<span class="font-body-sm text-body-sm">KPIs</span>
+</a>
+</li>
+<!-- Inactive Tab 3 -->
+<li>
+<a class="flex items-center gap-3 px-container-padding py-2 h-[40px] text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[18px]">timeline</span>
+<span class="font-body-sm text-body-sm">Anomaly Timeline</span>
+</a>
+</li>
+<!-- Inactive Tab 4 -->
+<li>
+<a class="flex items-center gap-3 px-container-padding py-2 h-[40px] text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[18px]">history_edu</span>
+<span class="font-body-sm text-body-sm">Agent Action Log</span>
+</a>
+</li>
+<!-- Active Tab 5 -->
+<li>
+<a class="flex items-center gap-3 px-container-padding py-2 h-[40px] bg-surface-container-highest text-primary font-bold cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[18px] fill-icon">assessment</span>
+<span class="font-body-sm text-body-sm font-semibold">Causal Evaluation Report</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[240px] min-w-0 relative">
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-theme(spacing.sidebar-width))] z-10 flex justify-between items-center h-row-height-md px-container-padding bg-surface border-b border-outline-variant">
+<!-- Brand / Nav -->
+<div class="flex items-center gap-6">
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">Correction Loop</span>
+<nav class="hidden md:flex gap-4">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Scenario Selector</a>
+</nav>
+</div>
+<!-- Trailing Action -->
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 font-button text-button text-on-surface hover:text-primary transition-colors">
+<span>Correction Loop</span>
+<span class="material-symbols-outlined text-[18px]">radio_button_checked</span>
+</button>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 overflow-y-auto pt-[68px] pb-container-padding px-container-padding">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-8">
+<!-- Page Header & Interpretation -->
+<div class="flex flex-col gap-4">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Causal Impact Analysis</h2>
+<div class="bg-surface-container-low border border-outline-variant p-[16px] rounded flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">info</span>
+<p class="font-body-md text-body-md text-on-surface m-0 leading-relaxed">
+                            Statistical evaluation confirms a highly significant reduction in operation latency and critical error occurrence when the Correction Loop is engaged, maintaining resource equilibrium across the fleet.
+                        </p>
+</div>
+</div>
+<!-- Strip Plots Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Plot 1: Latency -->
+<div class="bg-surface border border-outline-variant p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Operation Latency (ms)</h3>
+</div>
+<div class="flex flex-col gap-3 pt-2">
+<!-- OFF State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-secondary w-10">OFF</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point neutral" style="left: 45%;"></div>
+<div class="data-point neutral" style="left: 52%;"></div>
+<div class="data-point neutral" style="left: 58%;"></div>
+<div class="data-point neutral" style="left: 65%;"></div>
+<div class="data-point neutral" style="left: 70%;"></div>
+<div class="data-point neutral" style="left: 78%;"></div>
+<div class="data-point neutral" style="left: 85%;"></div>
+<div class="data-point neutral" style="left: 92%;"></div>
+<!-- Median -->
+<div class="median-line" style="left: 68%;"></div>
+</div>
+</div>
+<!-- ON State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-primary font-medium w-10">ON</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point accent" style="left: 10%;"></div>
+<div class="data-point accent" style="left: 15%;"></div>
+<div class="data-point accent" style="left: 22%;"></div>
+<div class="data-point accent" style="left: 28%;"></div>
+<div class="data-point accent" style="left: 35%;"></div>
+<div class="data-point accent" style="left: 42%;"></div>
+<div class="data-point accent" style="left: 48%;"></div>
+<div class="data-point accent" style="left: 55%;"></div>
+<!-- Median -->
+<div class="median-line bg-primary" style="left: 32%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Plot 2: Error Rate -->
+<div class="bg-surface border border-outline-variant p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Anomaly Rate (%)</h3>
+</div>
+<div class="flex flex-col gap-3 pt-2">
+<!-- OFF State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-secondary w-10">OFF</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point neutral" style="left: 30%;"></div>
+<div class="data-point neutral" style="left: 40%;"></div>
+<div class="data-point neutral" style="left: 45%;"></div>
+<div class="data-point neutral" style="left: 60%;"></div>
+<div class="data-point neutral" style="left: 75%;"></div>
+<!-- Median -->
+<div class="median-line" style="left: 45%;"></div>
+</div>
+</div>
+<!-- ON State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-primary font-medium w-10">ON</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point accent" style="left: 5%;"></div>
+<div class="data-point accent" style="left: 8%;"></div>
+<div class="data-point accent" style="left: 12%;"></div>
+<div class="data-point accent" style="left: 18%;"></div>
+<div class="data-point accent" style="left: 25%;"></div>
+<!-- Median -->
+<div class="median-line bg-primary" style="left: 12%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Plot 3: Resource Load -->
+<div class="bg-surface border border-outline-variant p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Compute Load (IOPS)</h3>
+</div>
+<div class="flex flex-col gap-3 pt-2">
+<!-- OFF State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-secondary w-10">OFF</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point neutral" style="left: 40%;"></div>
+<div class="data-point neutral" style="left: 48%;"></div>
+<div class="data-point neutral" style="left: 55%;"></div>
+<div class="data-point neutral" style="left: 62%;"></div>
+<div class="data-point neutral" style="left: 70%;"></div>
+<!-- Median -->
+<div class="median-line" style="left: 55%;"></div>
+</div>
+</div>
+<!-- ON State -->
+<div class="flex items-center gap-3">
+<span class="font-label-mono text-label-mono text-primary font-medium w-10">ON</span>
+<div class="relative flex-1 h-[24px]">
+<div class="absolute top-1/2 left-0 right-0 h-[1px] bg-outline-variant transform -translate-y-1/2"></div>
+<!-- Scattered Data Points -->
+<div class="data-point accent" style="left: 42%;"></div>
+<div class="data-point accent" style="left: 50%;"></div>
+<div class="data-point accent" style="left: 58%;"></div>
+<div class="data-point accent" style="left: 65%;"></div>
+<div class="data-point accent" style="left: 72%;"></div>
+<!-- Median -->
+<div class="median-line bg-primary" style="left: 58%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Statistics Key-Value List -->
+<div class="bg-surface border border-outline-variant">
+<!-- Header Row -->
+<div class="grid grid-cols-4 gap-4 p-4 border-b border-outline-variant bg-surface-bright">
+<div class="font-label-mono text-label-mono text-secondary uppercase tracking-[0.05em]">Metric</div>
+<div class="font-label-mono text-label-mono text-secondary uppercase tracking-[0.05em]">Test Statistic (Welch's t)</div>
+<div class="font-label-mono text-label-mono text-secondary uppercase tracking-[0.05em]">P-Value</div>
+<div class="font-label-mono text-label-mono text-secondary uppercase tracking-[0.05em]">Effect Size (Cohen's d)</div>
+</div>
+<!-- Data Rows -->
+<div class="flex flex-col">
+<div class="grid grid-cols-4 gap-4 px-4 h-row-height-md items-center border-b border-outline-variant hover:bg-surface-container-low transition-colors duration-150">
+<div class="font-body-md text-body-md text-on-surface">Operation Latency</div>
+<div class="font-label-mono text-label-mono text-on-surface">t = 14.82</div>
+<div class="font-label-mono text-label-mono text-primary font-medium">&lt; 0.0001</div>
+<div class="font-label-mono text-label-mono text-on-surface">1.24 (Large)</div>
+</div>
+<div class="grid grid-cols-4 gap-4 px-4 h-row-height-md items-center border-b border-outline-variant hover:bg-surface-container-low transition-colors duration-150">
+<div class="font-body-md text-body-md text-on-surface">Anomaly Rate</div>
+<div class="font-label-mono text-label-mono text-on-surface">t = 8.45</div>
+<div class="font-label-mono text-label-mono text-primary font-medium">0.0024</div>
+<div class="font-label-mono text-label-mono text-on-surface">0.89 (Large)</div>
+</div>
+<div class="grid grid-cols-4 gap-4 px-4 h-row-height-md items-center hover:bg-surface-container-low transition-colors duration-150">
+<div class="font-body-md text-body-md text-on-surface">Compute Load</div>
+<div class="font-label-mono text-label-mono text-on-surface">t = 1.02</div>
+<div class="font-label-mono text-label-mono text-secondary">0.3120</div>
+<div class="font-label-mono text-label-mono text-secondary">0.11 (Negligible)</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

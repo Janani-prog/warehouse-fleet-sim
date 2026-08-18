@@ -31,7 +31,7 @@ class World:
         self,
         seed: int,
         num_robots: int = 8,
-        order_rate: float = 0.15,
+        order_rate: float | Callable[[int], float] = 0.15,
         warehouse: Warehouse | None = None,
         planner: PlannerFn = astar,
         avoidance: AvoidanceFn = classical_avoidance,
@@ -215,7 +215,7 @@ class World:
         return {
             "seed": self.seed,
             "num_robots": len(self.robots),
-            "order_rate": self.order_rate,
+            "order_rate": self.order_rate if not callable(self.order_rate) else "scripted",
             "num_ticks": self.tick_count,
             "warehouse": {
                 "width": self.warehouse.width,

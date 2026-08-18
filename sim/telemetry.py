@@ -15,6 +15,7 @@ class TelemetryLogger:
         self.zone_rows: list[dict] = []
         self.robot_rows: list[dict] = []
         self.event_rows: list[dict] = []
+        self.forecast_rows: list[dict] = []
 
     def log_tick(
         self,
@@ -57,12 +58,36 @@ class TelemetryLogger:
     def log_event(self, tick: int, event_type: str, **fields) -> None:
         self.event_rows.append({"tick": tick, "type": event_type, **fields})
 
+    def log_forecast(
+        self,
+        tick: int,
+        congestion_prob: float | None,
+        collision_prob: float | None,
+        classifier_triggered: bool,
+        backstop_triggered: bool,
+        congestion_prob_raw: float | None = None,
+        collision_prob_raw: float | None = None,
+    ) -> None:
+        self.forecast_rows.append(
+            {
+                "tick": tick,
+                "congestion_prob": congestion_prob,
+                "collision_prob": collision_prob,
+                "congestion_prob_raw": congestion_prob_raw,
+                "collision_prob_raw": collision_prob_raw,
+                "classifier_triggered": classifier_triggered,
+                "backstop_triggered": backstop_triggered,
+                "triggered": classifier_triggered or backstop_triggered,
+            }
+        )
+
     def to_frames(self) -> dict[str, pd.DataFrame]:
         return {
             "ticks": pd.DataFrame(self.tick_rows),
             "zones": pd.DataFrame(self.zone_rows),
             "robots": pd.DataFrame(self.robot_rows),
             "events": pd.DataFrame(self.event_rows),
+            "forecast": pd.DataFrame(self.forecast_rows),
         }
 
     def save(self, out_dir: str | Path, orders: list, manifest: dict) -> None:

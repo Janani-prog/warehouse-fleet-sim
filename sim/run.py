@@ -1,6 +1,6 @@
 """CLI: run a scripted scenario and save a replayable telemetry log.
 
-    python -m sim.run --seed 0 --ticks 500 --robots 6 --order-rate 0.4 --out data/runs/demo
+    python -m sim.run --seed 0 --ticks 500 --robots 8 --order-rate 0.15 --out data/runs/demo
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ticks", type=int, default=500)
-    parser.add_argument("--robots", type=int, default=6)
-    parser.add_argument("--order-rate", type=float, default=0.4)
+    parser.add_argument("--robots", type=int, default=8)
+    parser.add_argument("--order-rate", type=float, default=0.15)
     parser.add_argument("--out", type=str, default="data/runs/demo")
     args = parser.parse_args()
 

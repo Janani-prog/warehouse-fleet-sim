@@ -27,6 +27,7 @@ class Robot:
     state: RobotState = RobotState.IDLE
     order_id: int | None = None
     path: list[tuple[int, int]] = field(default_factory=list)
+    stuck_ticks: int = 0
 
     @property
     def pos(self) -> tuple[int, int]:

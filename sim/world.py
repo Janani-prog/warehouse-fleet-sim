@@ -7,27 +7,36 @@ import math
 
 import numpy as np
 
+from ml.astar import astar
 from sim.entities import Order, OrderStatus, Robot, RobotState
 from sim.grid import Warehouse, generate_default_layout
 from sim.order_generator import OrderGenerator
-from sim.policies import step_toward
+from sim.policies import PlannerFn
 from sim.telemetry import TelemetryLogger
 
 NEAR_MISS_DISTANCE = 1.5  # Euclidean distance threshold for a logged near-miss
+STUCK_THRESHOLD = 3  # ticks a robot can be blocked before forcing a side-step
+
+# num_robots/order_rate defaults are tuned so fleet throughput comfortably
+# exceeds arrival rate under A*-driven movement + nearest-idle assignment
+# (see CLAUDE.md Current Status for the sweep this came from) - the point is
+# a demo run that stays caught up, not one with a permanently growing queue.
 
 
 class World:
     def __init__(
         self,
         seed: int,
-        num_robots: int = 6,
-        order_rate: float = 0.4,
+        num_robots: int = 8,
+        order_rate: float = 0.15,
         warehouse: Warehouse | None = None,
+        planner: PlannerFn = astar,
     ):
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.warehouse = warehouse or generate_default_layout()
         self.order_rate = order_rate
+        self.planner = planner
 
         spawn = self.warehouse.spawn_points
         self.robots: list[Robot] = [
@@ -67,14 +76,61 @@ class World:
             idle_robots.remove(nearest)
             self.telemetry.log_event(tick, "order_assigned", order_id=order.id, robot_id=nearest.id)
 
-    def _move_robots(self) -> None:
+    def _move_robots(self, tick: int) -> None:
+        # Recompute a robot's cached path only when its target changed (new
+        # assignment, or pickup->dropoff transition) or it has none yet.
+        for robot in self.robots:
+            target = self._target_for(robot)
+            if target is None or robot.pos == target:
+                robot.path = []
+                continue
+            if not robot.path or robot.path[-1] != target:
+                full_path = self.planner(self.warehouse, robot.pos, target)
+                robot.path = list(full_path[1:]) if full_path else []
+
+        # Idle robots hold position; robots with a target follow their cached
+        # path one cell per tick, yielding to whichever robot already claimed
+        # the next cell this tick (full conflict-free avoidance is M3's job).
         occupied = {r.pos for r in self.robots}
         for robot in self.robots:
             target = self._target_for(robot)
+            if target is None:
+                robot.state = RobotState.IDLE
+                robot.stuck_ticks = 0
+                continue
+            if robot.pos == target:
+                robot.state = RobotState.MOVING
+                robot.stuck_ticks = 0
+                continue
+
             occupied.discard(robot.pos)
-            new_pos = step_toward(robot.pos, target, self.warehouse, occupied, self.rng)
-            robot.x, robot.y = new_pos
-            occupied.add(new_pos)
+            if robot.path and robot.path[0] not in occupied:
+                next_cell = robot.path.pop(0)
+                robot.x, robot.y = next_cell
+                robot.state = RobotState.MOVING
+                robot.stuck_ticks = 0
+            else:
+                robot.stuck_ticks += 1
+                if robot.stuck_ticks >= STUCK_THRESHOLD:
+                    # Deadlock/livelock breaker: two (or more) robots whose
+                    # cached paths cross will otherwise wait on each other
+                    # forever, since neither ever frees its cell. Force a
+                    # side-step onto any free, unclaimed neighbor and drop
+                    # the cached path so it's replanned fresh next tick. This
+                    # is a minimal liveness guarantee, not real avoidance -
+                    # M3's ORCA/learned traffic policy replaces it.
+                    alternatives = [c for c in self.warehouse.neighbors(*robot.pos) if c not in occupied]
+                    if alternatives:
+                        robot.x, robot.y = tuple(alternatives[self.rng.integers(len(alternatives))])
+                        robot.path = []
+                        robot.state = RobotState.MOVING
+                        robot.stuck_ticks = 0
+                        self.telemetry.log_event(tick, "deadlock_broken", robot_id=robot.id)
+                    else:
+                        robot.state = RobotState.BLOCKED
+                else:
+                    robot.state = RobotState.BLOCKED
+            occupied.add(robot.pos)
 
     def _resolve_pickups_dropoffs(self, tick: int) -> None:
         for robot in self.robots:
@@ -130,7 +186,7 @@ class World:
             self.orders[order.id] = order
             self.telemetry.log_event(tick, "order_arrived", order_id=order.id)
         self._assign_orders(tick)
-        self._move_robots()
+        self._move_robots(tick)
         self._resolve_pickups_dropoffs(tick)
         self._log_telemetry(tick)
         self.tick_count += 1

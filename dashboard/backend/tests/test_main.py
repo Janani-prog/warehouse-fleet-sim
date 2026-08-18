@@ -71,6 +71,23 @@ def test_robots_endpoint_missing_file_returns_empty_list(client, tmp_path):
     assert resp.json() == []
 
 
+def test_forecaster_thresholds_404_when_model_untrained(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "FORECASTER_MODEL_DIR", tmp_path / "no_such_model")
+    resp = client.get("/api/forecaster/thresholds")
+    assert resp.status_code == 404
+
+
+def test_forecaster_thresholds_reads_json(client, tmp_path, monkeypatch):
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    with open(model_dir / "thresholds.json", "w") as f:
+        json.dump({"congestion": 0.5, "collision": 0.6}, f)
+    monkeypatch.setattr(main, "FORECASTER_MODEL_DIR", model_dir)
+    resp = client.get("/api/forecaster/thresholds")
+    assert resp.status_code == 200
+    assert resp.json() == {"congestion": 0.5, "collision": 0.6}
+
+
 def test_kpis_computes_completion_rate_and_wait(client, tmp_path):
     _write_run(
         tmp_path / "run_d",

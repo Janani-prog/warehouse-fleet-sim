@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sim.grid import generate_default_layout
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "runs"
+FORECASTER_MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "models" / "forecaster"
 
 app = FastAPI(title="Fleet Ops Dashboard API")
 
@@ -116,6 +117,18 @@ def get_forecast(run_id: str) -> list[dict]:
 @app.get("/api/runs/{run_id}/events")
 def get_events(run_id: str) -> list[dict]:
     return _read_parquet_records(_run_dir(run_id) / "events.parquet")
+
+
+@app.get("/api/forecaster/thresholds")
+def get_forecaster_thresholds() -> dict:
+    """The actual trained calibrated-confidence operating thresholds (see
+    ml/train_forecaster.py) - the Anomaly Timeline draws its threshold line
+    from this, not a guessed constant."""
+    path = FORECASTER_MODEL_DIR / "thresholds.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="forecaster model not trained yet")
+    with open(path) as f:
+        return json.load(f)
 
 
 @app.get("/api/runs/{run_id}/kpis")

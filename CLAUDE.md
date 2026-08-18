@@ -72,8 +72,8 @@ The bar and process for doing this:
 _(update this section each session)_
 
 - **Last updated**: 2026-08-18
-- **Current part**: Part 1 (Review 1 target)
-- **Current milestone**: M5 — complete
+- **Current part**: Part 1 (Review 1 target) — **complete, tagged `review-1`**
+- **Current milestone**: M6 — complete
 - **Completed**:
   - Repo skeleton (`sim/`, `ml/`, `rag/`, `agent/`, `eval/`, `dashboard/`, `data/`, `docs/`) created; source docs (PRD, TECHNICAL_ARCHITECTURE, FRONTEND_SPEC, SECURITY, BACKLOG) moved into `docs/` under canonical filenames.
   - The Stitch design export (5 dashboard screens: fleet map, anomaly timeline, agent action log, causal eval report, loading state — HTML/CSS mockups + screenshots + a full design-token spec) extracted to `docs/design/stitch_warehouse_fleet_operations_console/`. Use this as the concrete visual reference for M5 so the dashboard looks like a finished internal tool, not a placeholder.
@@ -138,5 +138,9 @@ _(update this section each session)_
   - **Agent Action Log / Causal Eval Report**: `ComingSoonView` placeholder, explicitly not real views yet — correctly out of scope until M10.
   - **Verified**: `tsc --noEmit` and `vite build` both clean; `pytest dashboard/backend/tests/` 9/9 pass; full 76-test suite (`sim`+`ml`+`dashboard`) passes; manually loaded the dashboard in-browser against `congestion_spike_demo` — all three Part-1 views render correctly with live data (animation plays, KPI cards populate, confidence chart shows the actual congestion spike crossing the trained threshold), zero console errors.
   - **Done-when verified** per `BACKLOG.md` M5: dashboard loads a real run's data and all three Part-1 views render correctly and look presentable.
-- **Next up**: M6 — Part 1 Wrap-up. Run through the Review 1 Demo Checklist end to end, write the "what's built / what's next" README section, tag `git tag review-1`.
+- **M6 — Part 1 Wrap-up**:
+  - **Review 1 Demo Checklist run through end to end**: live replayable simulation with a moving/order-completing fleet (Fleet Map, verified in-browser) ✓; classical-vs-learned comparison numbers for both path planning and traffic avoidance exist and are reproducible (`data/results/planning_benchmark.csv`, `data/results/traffic_benchmark.csv`) ✓; forecaster visibly flags the scripted congestion spike 16 ticks early with calibrated confidence shown on the Anomaly Timeline ✓; dashboard shows fleet map + KPI strip + anomaly timeline, polished (Axiom Operations design tokens, not a debug view) ✓; README written ✓.
+  - Root `README.md` rewritten: what's-built summary with the actual headline numbers pulled from each milestone's benchmark (not restated from memory — cross-checked against `data/results/` and `data/models/forecaster/report.json`), the "observes and predicts, does not yet act autonomously" framing the checklist requires, full setup instructions for both the Python side and the dashboard (frontend + backend, since the backend needs a separate `uvicorn` command not previously documented anywhere), and the exact seeded command sequence to regenerate every dataset/model/benchmark/run from a clean clone.
+  - **Tagged `review-1`** at this commit — Part 1 is feature-complete and demoable on its own; Part 2 (M7+) starts from here.
+- **Next up**: M7 — RAG Pipeline (Part 2 start). Author synthetic SOP corpus (15-30 docs covering anomaly types × severities), build BM25 + dense embedding hybrid retrieval, hand-label a retrieval eval set. Per the "Permission to Deviate" section, `requirements.txt` still needs the RAG-only deps added now (`sentence-transformers`, `rank_bm25`, `faiss-cpu`) — deliberately deferred until this point per the M0 status note.
 - **Open issues / blockers**: —

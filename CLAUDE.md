@@ -71,9 +71,17 @@ The bar and process for doing this:
 ## Current Status
 _(update this section each session)_
 
-- **Last updated**: [date]
+- **Last updated**: 2026-08-18
 - **Current part**: Part 1 (Review 1 target)
-- **Current milestone**: M0 — not yet started
-- **Completed**: —
-- **Next up**: repo skeleton + environment setup, then work M0 → M6 in order. Stop and demo once M6's Review 1 Demo Checklist passes — do not start Part 2 (M7+) until then.
+- **Current milestone**: M0 — complete
+- **Completed**:
+  - Repo skeleton (`sim/`, `ml/`, `rag/`, `agent/`, `eval/`, `dashboard/`, `data/`, `docs/`) created; source docs (PRD, TECHNICAL_ARCHITECTURE, FRONTEND_SPEC, SECURITY, BACKLOG) moved into `docs/` under canonical filenames.
+  - The Stitch design export (5 dashboard screens: fleet map, anomaly timeline, agent action log, causal eval report, loading state — HTML/CSS mockups + screenshots + a full design-token spec) extracted to `docs/design/stitch_warehouse_fleet_operations_console/`. Use this as the concrete visual reference for M5 so the dashboard looks like a finished internal tool, not a placeholder.
+  - Python env: `.venv` + `requirements.txt` (numpy, scipy, pandas, pyarrow, torch CPU, scikit-learn, matplotlib, fastapi, uvicorn, pydantic, pytest), installs clean via `--extra-index-url https://download.pytorch.org/whl/cpu` (keeps torch to the ~205MB CPU wheel instead of the much larger CUDA build).
+  - **Deviation (below Locked Decisions, not requiring sign-off)**: RAG/agent-only deps (`sentence-transformers`, `rank_bm25`, `faiss-cpu`, `peft`, `transformers`, an Ollama client) are deliberately *not* in `requirements.txt` yet — they're unused until M7/M8 (Part 2), so adding them now would just slow every `pip install` for no benefit. Add them when M7 starts.
+  - `pyproject.toml` configures pytest (`pythonpath = ["."]`, testpaths under `sim/ml/eval` `tests/`); one placeholder test passes, confirming the harness is wired.
+  - Dashboard scaffolded with Vite + React + TypeScript + Tailwind v4 (via the official `@tailwindcss/vite` plugin, not the old `tailwind init`/PostCSS flow, since v4 dropped that). Vite's demo boilerplate (counter, logos, marketing copy) stripped down to an empty placeholder page — real views land in M5 against the Stitch mockups.
+  - Git initialized, default branch renamed `master` → `main`. GitHub repo created via authenticated `gh` CLI: **https://github.com/Janani-prog/warehouse-fleet-sim** (public), set as `origin`. Three logical commits (docs/design, Python skeleton, dashboard scaffold) pushed to `main`.
+  - Verified both from clean: `pip install -r requirements.txt` succeeds, `npm install` succeeds, `npx vite build` succeeds, `pytest` passes.
+- **Next up**: M1 — Simulator Core. Grid warehouse layout, robot entities, order generator, deterministic seeding, telemetry logger, unit tests for seed determinism and out-of-bounds spawning.
 - **Open issues / blockers**: —

@@ -73,7 +73,7 @@ _(update this section each session)_
 
 - **Last updated**: 2026-08-18
 - **Current part**: Part 1 (Review 1 target)
-- **Current milestone**: M0 — complete
+- **Current milestone**: M1 — complete
 - **Completed**:
   - Repo skeleton (`sim/`, `ml/`, `rag/`, `agent/`, `eval/`, `dashboard/`, `data/`, `docs/`) created; source docs (PRD, TECHNICAL_ARCHITECTURE, FRONTEND_SPEC, SECURITY, BACKLOG) moved into `docs/` under canonical filenames.
   - The Stitch design export (5 dashboard screens: fleet map, anomaly timeline, agent action log, causal eval report, loading state — HTML/CSS mockups + screenshots + a full design-token spec) extracted to `docs/design/stitch_warehouse_fleet_operations_console/`. Use this as the concrete visual reference for M5 so the dashboard looks like a finished internal tool, not a placeholder.
@@ -83,5 +83,15 @@ _(update this section each session)_
   - Dashboard scaffolded with Vite + React + TypeScript + Tailwind v4 (via the official `@tailwindcss/vite` plugin, not the old `tailwind init`/PostCSS flow, since v4 dropped that). Vite's demo boilerplate (counter, logos, marketing copy) stripped down to an empty placeholder page — real views land in M5 against the Stitch mockups.
   - Git initialized, default branch renamed `master` → `main`. GitHub repo created via authenticated `gh` CLI: **https://github.com/Janani-prog/warehouse-fleet-sim** (public), set as `origin`. Three logical commits (docs/design, Python skeleton, dashboard scaffold) pushed to `main`.
   - Verified both from clean: `pip install -r requirements.txt` succeeds, `npm install` succeeds, `npx vite build` succeeds, `pytest` passes.
-- **Next up**: M1 — Simulator Core. Grid warehouse layout, robot entities, order generator, deterministic seeding, telemetry logger, unit tests for seed determinism and out-of-bounds spawning.
+
+- **M1 — Simulator Core**:
+  - `sim/grid.py`: fixed, deterministic 24×16 warehouse layout — 3 horizontal rack bands with vertical cross-aisle gaps, 16 zones (6×4 cells each) for aggregate metrics, 5 dock points on the left edge doubling as robot spawn points and order drop-offs, pickup points on the aisle cells bordering each rack band.
+  - `sim/entities.py`: `Robot` (position, state, current order, path stub for M2) and `Order` (origin/destination, lifecycle status, arrival/assign/pickup/dropoff ticks, `wait_ticks`).
+  - `sim/order_generator.py`: Poisson-arrival order generator driven by the world's single shared `np.random.Generator`, seeded once — this is what makes runs deterministic end to end.
+  - `sim/policies.py`: **M1 placeholder movement only** — greedy random walk biased 80% toward the current target cell, no real pathing or collision avoidance. This is intentionally dumb; it's replaced by A*/learned planning in M2 and ORCA/learned avoidance in M3. Nearest-idle-robot order assignment (Manhattan distance) is likewise a placeholder for Hungarian/learned scheduling (M11, P1).
+  - `sim/telemetry.py`: per-tick Parquet tables — `ticks` (min pairwise distance, near-miss count, active orders), `zones` (queue depth + robot density per zone), `robots` (full per-tick position/state for replay), `events` (order arrived/assigned/picked-up/completed), plus `orders.parquet` (full lifecycle) and `manifest.json` (seed/config). This schema is designed to directly serve both M4 (windowed features per tick) and M5 (fleet-map replay) without rework.
+  - `sim/run.py`: CLI (`python -m sim.run --seed --ticks --robots --order-rate --out`) — done-when condition verified: a 500-tick, 6-robot, seed-0 run produces a full replayable telemetry log in `data/runs/demo/` (gitignored, regeneratable).
+  - Tests (`sim/tests/`): 9 passing — zone/layout sanity, spawn/dock/pickup points free, no-rack-neighbors; same-seed runs produce byte-identical robot trajectories and order histories, different seeds diverge; no robot or order position ever lands out of bounds or inside a rack across a run.
+  - **Known tuning issue, not a bug**: with the M1 placeholder random-walk policy, default demo params (6 robots, order_rate=0.4) let the pending-order backlog grow largely unbounded over 500 ticks (mean wait ~184 ticks, only ~20% of orders completed) — the random walk is just too inefficient to keep up. Expected and fine for M1 (whose job is only to prove determinism/bounds/telemetry/replay work), but the default scenario params will need retuning once A* (M2) and real avoidance (M3) land, so the Review-1 demo run shows a fleet that's actually keeping up with load rather than perpetually backlogged.
+- **Next up**: M2 — Path Planning. A* implementation + unit tests, A*-solved dataset generation via the simulator, imitation-learned planner trained on that dataset, benchmark script (path length ratio, latency, success rate) comparing classical vs. learned. Swap `sim/policies.py`'s random walk for real A* pathing once it exists.
 - **Open issues / blockers**: —

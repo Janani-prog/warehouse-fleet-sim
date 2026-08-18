@@ -11,3 +11,9 @@ from sim.grid import Warehouse
 
 Cell = tuple[int, int]
 PlannerFn = Callable[[Warehouse, Cell, Cell], "list[Cell] | None"]
+
+# Given each robot's current position and desired next cell, arbitrate
+# conflicts and return each robot's actual next cell for the tick - the
+# traffic/collision-avoidance layer (classical `ml.traffic.resolve` by
+# default, or a learned equivalent).
+AvoidanceFn = Callable[[Warehouse, dict[int, Cell], dict[int, Cell]], dict[int, Cell]]

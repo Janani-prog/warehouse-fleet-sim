@@ -4,18 +4,21 @@ robots, order generation, movement, and telemetry logging."""
 from __future__ import annotations
 
 import math
+from dataclasses import replace
+from typing import Callable
 
 import numpy as np
 
 from ml.astar import astar
+from ml.traffic import resolve as classical_avoidance
 from sim.entities import Order, OrderStatus, Robot, RobotState
 from sim.grid import Warehouse, generate_default_layout
 from sim.order_generator import OrderGenerator
-from sim.policies import PlannerFn
+from sim.policies import AvoidanceFn, PlannerFn
 from sim.telemetry import TelemetryLogger
 
 NEAR_MISS_DISTANCE = 1.5  # Euclidean distance threshold for a logged near-miss
-STUCK_THRESHOLD = 3  # ticks a robot can be blocked before forcing a side-step
+STUCK_THRESHOLD = 3  # ticks blocked by avoidance before an obstacle-aware replan
 
 # num_robots/order_rate defaults are tuned so fleet throughput comfortably
 # exceeds arrival rate under A*-driven movement + nearest-idle assignment
@@ -31,12 +34,21 @@ class World:
         order_rate: float = 0.15,
         warehouse: Warehouse | None = None,
         planner: PlannerFn = astar,
+        avoidance: AvoidanceFn = classical_avoidance,
+        on_move: Callable[[dict, dict, dict], None] | None = None,
     ):
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.warehouse = warehouse or generate_default_layout()
         self.order_rate = order_rate
         self.planner = planner
+        self.avoidance = avoidance
+        # optional observation hook: called each tick with (positions,
+        # desired, final) robot-id -> cell dicts, right before moves are
+        # applied - lets external code (e.g. the traffic-avoidance dataset
+        # generator) watch what the avoidance policy decided without
+        # duplicating any of this class's movement logic.
+        self.on_move = on_move
 
         spawn = self.warehouse.spawn_points
         self.robots: list[Robot] = [
@@ -76,6 +88,15 @@ class World:
             idle_robots.remove(nearest)
             self.telemetry.log_event(tick, "order_assigned", order_id=order.id, robot_id=nearest.id)
 
+    def _replan_around_robots(self, robot: Robot, target: tuple[int, int]) -> list[tuple[int, int]] | None:
+        """A* (or the configured planner) around every other robot's current
+        cell treated as a temporary obstacle - used when a robot has been
+        blocked by avoidance for too long, e.g. a persistently parked robot
+        sitting in a single-width corridor the cached path runs through."""
+        blocking_cells = {r.pos for r in self.robots if r.id != robot.id and r.pos != target}
+        temp_warehouse = replace(self.warehouse, racks=self.warehouse.racks | blocking_cells)
+        return self.planner(temp_warehouse, robot.pos, target)
+
     def _move_robots(self, tick: int) -> None:
         # Recompute a robot's cached path only when its target changed (new
         # assignment, or pickup->dropoff transition) or it has none yet.
@@ -88,49 +109,44 @@ class World:
                 full_path = self.planner(self.warehouse, robot.pos, target)
                 robot.path = list(full_path[1:]) if full_path else []
 
-        # Idle robots hold position; robots with a target follow their cached
-        # path one cell per tick, yielding to whichever robot already claimed
-        # the next cell this tick (full conflict-free avoidance is M3's job).
-        occupied = {r.pos for r in self.robots}
+        # Each robot proposes its desired next cell (next path cell, or its
+        # own position if idle/arrived/pathless); the avoidance policy
+        # (classical simplified-velocity-obstacle by default, or a learned
+        # equivalent) arbitrates all conflicts for the tick at once.
+        positions = {r.id: r.pos for r in self.robots}
+        desired = {r.id: (r.path[0] if r.path else r.pos) for r in self.robots}
+        final_positions = self.avoidance(self.warehouse, positions, desired)
+        if self.on_move is not None:
+            self.on_move(positions, desired, final_positions)
+
         for robot in self.robots:
             target = self._target_for(robot)
+            new_pos = final_positions[robot.id]
+            moved = new_pos != robot.pos
+            if moved and robot.path and new_pos == robot.path[0]:
+                robot.path.pop(0)  # planned step taken
+            elif moved:
+                robot.path = []  # avoidance side-stepped off-path; replan next tick
+            robot.x, robot.y = new_pos
+
             if target is None:
                 robot.state = RobotState.IDLE
                 robot.stuck_ticks = 0
-                continue
-            if robot.pos == target:
+            elif robot.pos == target:
                 robot.state = RobotState.MOVING
                 robot.stuck_ticks = 0
-                continue
-
-            occupied.discard(robot.pos)
-            if robot.path and robot.path[0] not in occupied:
-                next_cell = robot.path.pop(0)
-                robot.x, robot.y = next_cell
+            elif moved:
                 robot.state = RobotState.MOVING
                 robot.stuck_ticks = 0
             else:
+                robot.state = RobotState.BLOCKED
                 robot.stuck_ticks += 1
                 if robot.stuck_ticks >= STUCK_THRESHOLD:
-                    # Deadlock/livelock breaker: two (or more) robots whose
-                    # cached paths cross will otherwise wait on each other
-                    # forever, since neither ever frees its cell. Force a
-                    # side-step onto any free, unclaimed neighbor and drop
-                    # the cached path so it's replanned fresh next tick. This
-                    # is a minimal liveness guarantee, not real avoidance -
-                    # M3's ORCA/learned traffic policy replaces it.
-                    alternatives = [c for c in self.warehouse.neighbors(*robot.pos) if c not in occupied]
-                    if alternatives:
-                        robot.x, robot.y = tuple(alternatives[self.rng.integers(len(alternatives))])
-                        robot.path = []
-                        robot.state = RobotState.MOVING
-                        robot.stuck_ticks = 0
-                        self.telemetry.log_event(tick, "deadlock_broken", robot_id=robot.id)
-                    else:
-                        robot.state = RobotState.BLOCKED
-                else:
-                    robot.state = RobotState.BLOCKED
-            occupied.add(robot.pos)
+                    new_path = self._replan_around_robots(robot, target)
+                    if new_path:
+                        robot.path = new_path[1:]
+                        self.telemetry.log_event(tick, "replanned_around_blockage", robot_id=robot.id)
+                    robot.stuck_ticks = 0
 
     def _resolve_pickups_dropoffs(self, tick: int) -> None:
         for robot in self.robots:

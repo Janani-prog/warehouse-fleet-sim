@@ -1,10 +1,14 @@
 # Part 1 (M0-M6) dependencies: simulator, classical + learned planning/traffic,
 # LSTM forecaster, dashboard backend, tests.
 #
-# RAG/LLM-agent-only deps (sentence-transformers, rank_bm25, faiss-cpu, peft,
-# transformers, ollama client) are intentionally deferred to M7/M8 (Part 2) so
-# this install stays fast and lean while they're unused. See CLAUDE.md Current
-# Status for the note on this deviation.
+# Part 2 (M7+) RAG/agent deps: only rank_bm25 was added for BM25 keyword
+# search. Dense embeddings and the LLM agent both go through a local Ollama
+# server (already required for M8) instead of sentence-transformers/
+# transformers - see CLAUDE.md Current Status M7 note for the reasoning.
+# faiss-cpu was skipped too: docs/TECHNICAL_ARCHITECTURE.md 2.6 calls it
+# "optional overkill" at this corpus size (18 docs), so rag/dense_index.py
+# does plain in-memory cosine search instead. peft/transformers stay
+# deferred unless LoRA fine-tuning (P1 stretch) is actually pursued.
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 numpy==2.1.3
@@ -19,3 +23,4 @@ uvicorn[standard]==0.32.1
 httpx==0.28.1
 pydantic==2.10.3
 pytest==8.3.4
+rank_bm25==0.2.2

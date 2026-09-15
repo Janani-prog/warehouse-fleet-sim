@@ -1,0 +1,146 @@
+[
+  {
+    "id": "congestion-low",
+    "anomaly_type": "congestion",
+    "severity": "low",
+    "title": "Congestion, low severity — routine backlog fluctuation",
+    "recommended_action": "NO_ACTION",
+    "text": "Congestion signal, low severity. Active order backlog is elevated but well below the operating threshold, and the forecaster's calibrated congestion confidence is under 0.5. This is normal short-term fluctuation in order arrivals and does not indicate a developing bottleneck. Do not reassign tasks, replan routes, or throttle zone traffic in response to a low-severity reading alone. Continue passive monitoring of the active-orders trend on the next few ticks. Only escalate if confidence begins climbing toward the moderate band or the rule-based backstop fires."
+  },
+  {
+    "id": "congestion-moderate",
+    "anomaly_type": "congestion",
+    "severity": "moderate",
+    "title": "Congestion, moderate severity — early trend, monitor closely",
+    "recommended_action": "NO_ACTION",
+    "text": "Congestion signal, moderate severity. Calibrated congestion confidence has risen into the 0.5 to threshold band: the active-orders backlog is trending upward but has not yet crossed the operating threshold and the rule-based backstop has not fired. This is the window to increase monitoring cadence, not to intervene. Taking a corrective action (reassignment, replanning, throttling) at this severity is premature and risks unnecessary disruption to otherwise-normal fleet operation on what may be a transient spike. Recommended response is NO_ACTION with continued tracking; re-evaluate every tick until the signal either resolves or escalates to high severity."
+  },
+  {
+    "id": "congestion-high",
+    "anomaly_type": "congestion",
+    "severity": "high",
+    "title": "Congestion, high severity — classifier early warning, act before backlog peaks",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "Congestion signal, high severity. Calibrated congestion confidence has crossed the classifier's operating threshold: the LSTM forecaster is predicting a congestion event (active orders at or above the fleet-wide threshold) within the next forecast window, ahead of the rule-based backstop actually firing. This is the intended early-warning case the forecaster exists for. Recommended response is THROTTLE_ZONE_TRAFFIC on the highest-queue-depth zone identified in the current telemetry window, reducing new order inflow to that zone for a short cooldown period to let the existing backlog drain before it becomes critical. Acting now, before the backstop fires, is materially better than waiting for the rule-based trigger."
+  },
+  {
+    "id": "congestion-critical",
+    "anomaly_type": "congestion",
+    "severity": "critical",
+    "title": "Congestion, critical severity — rule backstop firing, backlog at threshold now",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "Congestion signal, critical severity. The rule-based backstop has fired: active orders in the fleet backlog are at or above the hard congestion threshold right now, independent of and regardless of the classifier's calibrated confidence. This is not a forecast, it is the currently-observed state. Recommended response is immediate THROTTLE_ZONE_TRAFFIC on every zone whose queue depth is above the fleet-wide mean, sustained until the backlog visibly declines across consecutive ticks. If throttling alone does not reduce active orders within a few ticks, escalate to REASSIGN_TASK to redistribute pending orders away from the most saturated zones."
+  },
+  {
+    "id": "congestion-critical-dock",
+    "anomaly_type": "congestion",
+    "severity": "critical",
+    "title": "Congestion, critical, dock-zone specific — pickup/drop-off queue saturation",
+    "recommended_action": "REASSIGN_TASK",
+    "text": "Congestion signal, critical severity, localized to the dock line (zones adjacent to the left-edge spawn and drop-off points, Z_0_*). Unlike a fleet-wide backlog, this pattern shows queue depth concentrated specifically at dock-adjacent zones while other zones remain near baseline — robots are converging on a small number of dock cells faster than orders can be dropped off or picked up. Throttling zone traffic fleet-wide will not relieve a single-zone bottleneck. Recommended response is REASSIGN_TASK: redistribute in-flight orders whose target dock conflicts with the saturated zone to a less-loaded dock point, spreading dock-adjacent demand across the five available spawn/dropoff points instead of concentrating it."
+  },
+  {
+    "id": "congestion-high-crossaisle",
+    "anomaly_type": "congestion",
+    "severity": "high",
+    "title": "Congestion, high, cross-aisle bottleneck — queue building at a rack-band gap",
+    "recommended_action": "REPLAN_ROUTE",
+    "text": "Congestion signal, high severity, concentrated at a cross-aisle gap column between rack bands. Queue depth is climbing specifically in the zones bordering one of the narrow aisle-gap corridors, while robots elsewhere in the warehouse are still flowing normally. This is a routing pattern, not a fleet-wide capacity problem: too many active paths are being funneled through the same single-cell gap. Recommended response is REPLAN_ROUTE for robots currently queued at or approaching the affected gap, so their paths are recomputed to route through one of the other two aisle-gap columns instead, spreading cross-aisle traffic rather than concentrating it at one corridor."
+  },
+  {
+    "id": "collision-low",
+    "anomaly_type": "collision_risk",
+    "severity": "low",
+    "title": "Collision risk, low severity — isolated near-miss, no pattern",
+    "recommended_action": "NO_ACTION",
+    "text": "Collision-risk signal, low severity. Near-miss count for the tick is below the collision-risk threshold and the calibrated collision confidence is under 0.5 — this reads as an isolated, incidental close pass rather than a developing pattern. Recommended response is NO_ACTION. Intervening on every isolated near-miss would create unnecessary traffic disruption; the arbitration policy already resolves individual vertex and edge conflicts deterministically at the tick level, so a single low-severity reading is expected background noise, not a signal to act on."
+  },
+  {
+    "id": "collision-moderate",
+    "anomaly_type": "collision_risk",
+    "severity": "moderate",
+    "title": "Collision risk, moderate severity — near-miss rate climbing, not yet actionable",
+    "recommended_action": "NO_ACTION",
+    "text": "Collision-risk signal, moderate severity. Calibrated collision confidence is in the 0.5 to threshold band: the rate of near-misses is trending upward across recent ticks but has not yet crossed the classifier's operating threshold or the rule-based near-miss count threshold for the current tick. Recommended response is NO_ACTION with increased monitoring frequency on the affected zone's robot density. Because collision-risk confidence is noisier and less autocorrelated than congestion (near-misses are more stochastic tick to tick), a moderate reading is materially less reliable evidence of a real developing pattern than the same band would be for congestion — wait for either the high-severity classifier trigger or the critical-severity backstop before acting."
+  },
+  {
+    "id": "collision-high",
+    "anomaly_type": "collision_risk",
+    "severity": "high",
+    "title": "Collision risk, high severity — classifier early warning ahead of backstop",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "Collision-risk signal, high severity. Calibrated collision confidence has crossed the classifier's operating threshold, predicting a near-miss-threshold event in the upcoming forecast window even though the current tick's near-miss count has not yet crossed the rule-based backstop's threshold. This typically corresponds to rising robot density in a small number of zones, often near a cross-aisle gap or a busy pickup aisle. Recommended response is THROTTLE_ZONE_TRAFFIC on the highest-density zone to reduce the number of robots converging on the same corridor before the near-miss rate actually spikes, rather than waiting for the backstop to confirm a collision-risk event already occurring."
+  },
+  {
+    "id": "collision-critical",
+    "anomaly_type": "collision_risk",
+    "severity": "critical",
+    "title": "Collision risk, critical severity — rule backstop firing, near-misses at threshold now",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "Collision-risk signal, critical severity. The rule-based backstop has fired: the current tick's near-miss count is at or above the hard collision-risk threshold, independent of the classifier's calibrated confidence. This is happening now, not forecast. Recommended response is immediate THROTTLE_ZONE_TRAFFIC on the zone or zones with the highest robot density this tick, to reduce the number of robots being routed through the contested area on subsequent ticks. If near-misses persist for multiple ticks after throttling, escalate to REPLAN_ROUTE for the specific robots involved in repeated conflicts so their paths no longer cross the contested cells."
+  },
+  {
+    "id": "collision-critical-crossaisle",
+    "anomaly_type": "collision_risk",
+    "severity": "critical",
+    "title": "Collision risk, critical, cross-aisle gap — repeated head-on conflicts at a single-cell corridor",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "Collision-risk signal, critical severity, localized to a single-cell cross-aisle gap column between two rack bands. Near-misses are concentrated at one narrow corridor where opposing robot flows meet head-on — the arbitration policy is correctly preventing actual collisions by yielding one robot per conflict, but the resulting wait cascade is producing repeated near-miss readings at that gap tick after tick. This is a genuine structural bottleneck, not noise. Recommended response is THROTTLE_ZONE_TRAFFIC specifically on the zones bordering that gap column to reduce the rate at which new robots enter the corridor from either direction, letting the existing queue clear before more traffic is added."
+  },
+  {
+    "id": "collision-high-idle-robot",
+    "anomaly_type": "collision_risk",
+    "severity": "high",
+    "title": "Collision risk, high, stationary obstruction — idle or stuck robot blocking a corridor",
+    "recommended_action": "REASSIGN_TASK",
+    "text": "Collision-risk signal, high severity, associated with a persistently idle or stuck robot occupying a corridor cell that other robots must route through. Unlike a genuine multi-robot traffic pattern, this case is driven by a single stationary obstruction repeatedly forcing nearby robots into blocked-tick replans and near-miss-adjacent maneuvers around it. Throttling zone traffic will not resolve a fixed obstruction. Recommended response is REASSIGN_TASK for the idle robot itself — give it a new order or dock assignment so it clears the corridor — rather than acting on the surrounding traffic. If the robot remains stuck after reassignment, treat as a simulator/telemetry fault outside the scope of the whitelisted action set and escalate to a human operator."
+  },
+  {
+    "id": "false-positive-handling",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "Handling likely false-positive triggers — single-tick spikes with no sustained trend",
+    "recommended_action": "NO_ACTION",
+    "text": "General procedure for suspected false-positive anomaly triggers. If the classifier or backstop fires on a single tick but the underlying raw (uncalibrated) trend shown alongside the calibrated confidence was flat immediately beforehand, and the trigger does not persist for at least two consecutive ticks, treat it as a likely false positive rather than a genuine developing anomaly. Recommended response is NO_ACTION, logged with the anomaly type and confidence for later review, rather than an immediate corrective action. Acting on every single-tick trigger risks oscillating interventions that themselves degrade fleet throughput. This procedure exists because no classifier is perfectly precise — recall precision/recall tradeoffs are inherent, and the executor should not amplify classifier noise into disruptive real-world action."
+  },
+  {
+    "id": "concurrent-multi-anomaly",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "Concurrent congestion and collision-risk triggers — escalation ordering",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "General procedure for the case where both the congestion head and the collision-risk head are triggered in the same tick, whether by the classifier, the backstop, or both. Collision risk takes priority for action selection over congestion when both are simultaneously flagged, because collision-adjacent outcomes (near-misses, deadlock cascades) compound faster than order backlog does and are harder to unwind once they start affecting multiple robots. Recommended response is THROTTLE_ZONE_TRAFFIC targeted at the zone with the highest combined risk (queue depth and robot density both elevated), which tends to address the congestion contribution as a side effect even though it was chosen primarily for the collision-risk trigger. Re-evaluate both heads independently on the next tick rather than assuming one action clears both signals."
+  },
+  {
+    "id": "backstop-vs-classifier-precedence",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "When the classifier and rule-based backstop disagree",
+    "recommended_action": "THROTTLE_ZONE_TRAFFIC",
+    "text": "General operational guidance for handling disagreement between the calibrated LSTM classifier and the independent rule-based backstop. The backstop is deliberately simple and independent of the learned model specifically so the system degrades gracefully if the classifier is ever wrong, stale, or unavailable — per design, the backstop's judgment about the current tick takes precedence over the classifier's calibrated confidence about the current tick whenever they disagree, since the backstop is checking ground-truth telemetry directly rather than predicting from it. If the backstop has fired, treat the event as critical severity and act accordingly regardless of what the classifier's confidence says, even if that confidence happens to be low on the same tick."
+  },
+  {
+    "id": "escalation-human-operator",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "Escalating beyond the whitelisted action set to a human operator",
+    "recommended_action": "NO_ACTION",
+    "text": "General procedure for situations outside the scope of the whitelisted automated actions (REASSIGN_TASK, REPLAN_ROUTE, THROTTLE_ZONE_TRAFFIC, NO_ACTION). If a critical-severity anomaly persists for many consecutive ticks despite a whitelisted action already having been taken and re-evaluated, or if the retrieved SOP and the agent's reasoning genuinely conflict, or if the LLM's output cannot be parsed into a valid whitelisted action at all, the correct automated response is NO_ACTION, logged clearly as an escalation candidate for human review. The action executor must never invent a new action outside the whitelist or attempt to directly manipulate simulator state to work around a persistent anomaly — the whitelist boundary is a hard constraint, not a default to be bypassed under pressure."
+  },
+  {
+    "id": "confidence-threshold-reference",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "Reference — how calibrated confidence and severity bands are defined",
+    "recommended_action": "NO_ACTION",
+    "text": "Reference documentation, not a live response procedure. Calibrated confidence for both the congestion and collision-risk heads comes from temperature-scaled LSTM output, fit by minimizing negative log-likelihood on a held-out validation split, so a confidence of 0.8 means the event genuinely occurs roughly 80 percent of the time historically at that confidence level. Severity bands used across these procedures are: low (calibrated confidence under 0.5), moderate (0.5 up to the operating threshold), high (at or above the operating threshold, classifier-triggered, backstop not yet firing), and critical (rule-based backstop firing this tick, regardless of classifier confidence). This document exists purely as a lookup reference for interpreting other SOPs' severity language and recommends no action of its own."
+  },
+  {
+    "id": "post-incident-review",
+    "anomaly_type": "general",
+    "severity": "n/a",
+    "title": "Post-incident review procedure after an anomaly resolves",
+    "recommended_action": "NO_ACTION",
+    "text": "General procedure to follow once a triggered anomaly (congestion or collision-risk, any severity) has resolved — confidence has dropped back below the moderate band and the rule-based backstop is no longer firing for several consecutive ticks. Recommended response is NO_ACTION for the resolved anomaly itself; the correct action at this stage is logging, not intervention. Record the anomaly type, peak severity reached, which whitelisted action(s) were taken during the episode, and how many ticks elapsed between trigger and resolution, for later inclusion in the causal evaluation harness's paired-trial comparison. Do not take a corrective action in response to a signal that has already resolved on its own."
+  }
+]

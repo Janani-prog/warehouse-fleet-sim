@@ -1,0 +1,20 @@
+[
+  {"query": "Congestion risk, low severity. Calibrated confidence 0.31.", "expected_doc_id": "congestion-low"},
+  {"query": "Congestion risk, moderate severity. Calibrated confidence 0.58.", "expected_doc_id": "congestion-moderate"},
+  {"query": "Congestion risk, high severity. Calibrated confidence 0.91.", "expected_doc_id": "congestion-high"},
+  {"query": "Congestion risk, critical severity. Calibrated confidence 0.85. Rule-based backstop is firing this tick.", "expected_doc_id": "congestion-critical"},
+  {"query": "Active orders backlog is critical and concentrated specifically at the dock zones near the spawn and drop-off points, other zones look normal.", "expected_doc_id": "congestion-critical-dock"},
+  {"query": "Congestion confidence is high, and the queue is building right at one of the narrow cross-aisle gap corridors between rack bands, not spread across the whole warehouse.", "expected_doc_id": "congestion-high-crossaisle"},
+  {"query": "Collision risk, low severity. Calibrated confidence 0.22.", "expected_doc_id": "collision-low"},
+  {"query": "Collision risk, moderate severity. Calibrated confidence 0.63.", "expected_doc_id": "collision-moderate"},
+  {"query": "Collision risk, high severity. Calibrated confidence 0.88.", "expected_doc_id": "collision-high"},
+  {"query": "Collision risk, critical severity. Calibrated confidence 0.77. Rule-based backstop is firing this tick.", "expected_doc_id": "collision-critical"},
+  {"query": "Near-misses keep happening at the same single-cell aisle gap where two opposing robot flows meet head-on, tick after tick.", "expected_doc_id": "collision-critical-crossaisle"},
+  {"query": "A robot has been stuck and idle in a corridor for a while and other robots keep having to route around it, causing near-miss-like conflicts.", "expected_doc_id": "collision-high-idle-robot"},
+  {"query": "The anomaly trigger only fired for a single tick and the raw confidence trend was flat right before it, doesn't look like a real developing pattern.", "expected_doc_id": "false-positive-handling"},
+  {"query": "Both the congestion head and the collision-risk head triggered on the same tick, what should be prioritized first?", "expected_doc_id": "concurrent-multi-anomaly"},
+  {"query": "The classifier's calibrated confidence is low but the rule-based backstop just fired anyway, which one should the agent trust?", "expected_doc_id": "backstop-vs-classifier-precedence"},
+  {"query": "The LLM's output could not be parsed into a valid whitelisted action, what should the executor do?", "expected_doc_id": "escalation-human-operator"},
+  {"query": "What confidence range counts as moderate severity versus high severity for these anomaly types?", "expected_doc_id": "confidence-threshold-reference"},
+  {"query": "The congestion event has resolved and confidence has dropped back down for several ticks in a row, what is the follow-up procedure?", "expected_doc_id": "post-incident-review"}
+]

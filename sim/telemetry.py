@@ -16,6 +16,7 @@ class TelemetryLogger:
         self.robot_rows: list[dict] = []
         self.event_rows: list[dict] = []
         self.forecast_rows: list[dict] = []
+        self.agent_decision_rows: list[dict] = []
 
     def log_tick(
         self,
@@ -81,6 +82,41 @@ class TelemetryLogger:
             }
         )
 
+    def log_agent_decision(
+        self,
+        tick: int,
+        anomaly_type: str,
+        severity: str,
+        confidence: float | None,
+        sop_doc_id: str | None,
+        retrieval_score: float | None,
+        action: str,
+        target_type: str | None,
+        target_id: str | None,
+        reason: str | None,
+        executed: bool,
+        raw_llm_output: str | None,
+    ) -> None:
+        """One row per triggered tick of the M8 closed loop: forecaster/
+        backstop trigger -> RAG retrieval -> agent decision -> executor
+        outcome. This is the Agent Action Log the M10 dashboard view reads."""
+        self.agent_decision_rows.append(
+            {
+                "tick": tick,
+                "anomaly_type": anomaly_type,
+                "severity": severity,
+                "confidence": confidence,
+                "sop_doc_id": sop_doc_id,
+                "retrieval_score": retrieval_score,
+                "action": action,
+                "target_type": target_type,
+                "target_id": target_id,
+                "reason": reason,
+                "executed": executed,
+                "raw_llm_output": raw_llm_output,
+            }
+        )
+
     def to_frames(self) -> dict[str, pd.DataFrame]:
         return {
             "ticks": pd.DataFrame(self.tick_rows),
@@ -88,6 +124,7 @@ class TelemetryLogger:
             "robots": pd.DataFrame(self.robot_rows),
             "events": pd.DataFrame(self.event_rows),
             "forecast": pd.DataFrame(self.forecast_rows),
+            "agent_decisions": pd.DataFrame(self.agent_decision_rows),
         }
 
     def save(self, out_dir: str | Path, orders: list, manifest: dict) -> None:

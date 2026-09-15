@@ -54,6 +54,7 @@ class Forecaster:
         classifier_ready = len(self.window) == WINDOW
         probs = {head: None for head in HEADS}
         raw_probs = {head: None for head in HEADS}
+        per_head_triggered = {head: False for head in HEADS}
         classifier_triggered = False
         if classifier_ready:
             window_arr = np.stack(self.window)
@@ -66,12 +67,18 @@ class Forecaster:
                 calibrated = float(apply_temperature(np.array([logits[i]]), self.temperatures[head])[0])
                 probs[head] = calibrated
                 if calibrated >= self.thresholds[head]:
+                    per_head_triggered[head] = True
                     classifier_triggered = True
 
         return {
             "classifier_ready": classifier_ready,
             "congestion_prob": probs["congestion"],
             "collision_prob": probs["collision"],
+            # per-head classifier trigger, e.g. for agent/orchestrator.py to
+            # build a query for exactly the anomaly type(s) that actually
+            # crossed threshold, rather than the single combined OR below.
+            "congestion_classifier_triggered": per_head_triggered["congestion"],
+            "collision_classifier_triggered": per_head_triggered["collision"],
             # raw (uncalibrated) sigmoid output - not used for the trigger
             # decision (only the calibrated probability is, since it's the
             # one that's honest about real-world positive rate at that

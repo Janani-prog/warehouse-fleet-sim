@@ -66,3 +66,15 @@ def test_forecaster_combined_trigger_is_or_of_both_signals(tmp_path):
     assert result["classifier_triggered"] is False
     assert result["backstop_triggered"] is True
     assert result["triggered"] is True  # OR still fires via backstop
+
+
+def test_forecaster_exposes_per_head_classifier_trigger(tmp_path):
+    model_dir = _write_fake_model_dir(tmp_path, threshold=2.0)  # unreachable -> neither head triggers
+    forecaster = Forecaster(str(model_dir))
+    feat = tick_feature_vector(active_orders=10, near_miss_count=2, zone_queue_depths=[1], zone_robot_densities=[2], num_blocked_robots=0)
+    result = None
+    for _ in range(WINDOW):
+        result = forecaster.step(feat)
+    assert result["congestion_classifier_triggered"] is False
+    assert result["collision_classifier_triggered"] is False
+    assert result["classifier_triggered"] is False

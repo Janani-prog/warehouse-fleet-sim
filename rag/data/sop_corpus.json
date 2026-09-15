@@ -92,8 +92,8 @@
     "anomaly_type": "collision_risk",
     "severity": "high",
     "title": "Collision risk, high, stationary obstruction — idle or stuck robot blocking a corridor",
-    "recommended_action": "REASSIGN_TASK",
-    "text": "Collision-risk signal, high severity, associated with a persistently idle or stuck robot occupying a corridor cell that other robots must route through. Unlike a genuine multi-robot traffic pattern, this case is driven by a single stationary obstruction repeatedly forcing nearby robots into blocked-tick replans and near-miss-adjacent maneuvers around it. Throttling zone traffic will not resolve a fixed obstruction. Recommended response is REASSIGN_TASK for the idle robot itself — give it a new order or dock assignment so it clears the corridor — rather than acting on the surrounding traffic. If the robot remains stuck after reassignment, treat as a simulator/telemetry fault outside the scope of the whitelisted action set and escalate to a human operator."
+    "recommended_action": "REPLAN_ROUTE",
+    "text": "Collision-risk signal, high severity, associated with a persistently idle robot occupying a corridor cell that other robots must route through. Unlike a genuine multi-robot traffic pattern, this case is driven by a single stationary obstruction repeatedly forcing nearby robots into blocked-tick replans and near-miss-adjacent maneuvers around it. Throttling zone traffic will not resolve a fixed obstruction, and there is no in-progress order on the idle robot itself to reassign — it has none. Recommended response is REPLAN_ROUTE for the specific robot(s) being blocked by the obstruction, forcing them to recompute a path around it immediately rather than waiting out the normal blocked-tick threshold before the simulator's own stopgap replanning kicks in. If robots remain stuck after repeated replanning, treat as a simulator/telemetry fault outside the scope of the whitelisted action set and escalate to a human operator."
   },
   {
     "id": "false-positive-handling",

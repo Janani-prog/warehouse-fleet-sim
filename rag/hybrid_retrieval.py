@@ -1,8 +1,19 @@
 """Hybrid retrieval: BM25 + dense embedding similarity, combined via
-Reciprocal Rank Fusion (RRF). RRF is used instead of a weighted score blend
+weighted Reciprocal Rank Fusion (RRF is used instead of a raw score blend
 because BM25 scores and cosine similarities live on different, incomparable
-scales - RRF sidesteps that by fusing on rank position alone, which is the
-standard, parameter-light way to combine heterogeneous retrievers.
+scales - RRF sidesteps that by fusing on rank position alone).
+
+Weighted, not equal-weight, per a real failure found while building this
+(documented in CLAUDE.md's M8 note): the "confidence-threshold-reference"
+SOP is a glossary doc that legitimately repeats every severity band's
+vocabulary, so it consistently ranks highly on BM25 for almost any anomaly
+query even when it isn't the right doc - equal-weight RRF let that pull it
+above the actually-correct SOP on several real (not just benchmarked)
+queries where dense embeddings alone got it right. Weighting dense higher
+than BM25 fixes this without dropping BM25 entirely, since BM25 still
+carries queries with literal terms (e.g. an exact zone id) dense similarity
+alone can miss. The backlog explicitly allows "RRF or weighted fusion" -
+this is the latter, not a deviation from the M7 ticket's scope.
 """
 
 from __future__ import annotations
@@ -14,6 +25,8 @@ from rag.corpus import SopDoc, get_doc, load_corpus
 from rag.dense_index import DenseIndex
 
 RRF_K = 60  # standard RRF damping constant
+BM25_WEIGHT = 1.0
+DENSE_WEIGHT = 5.0
 
 
 @dataclass(frozen=True)
@@ -43,9 +56,9 @@ class HybridRetriever:
         for doc_id in all_ids:
             rrf_score = 0.0
             if doc_id in bm25_rank:
-                rrf_score += 1.0 / (RRF_K + bm25_rank[doc_id])
+                rrf_score += BM25_WEIGHT / (RRF_K + bm25_rank[doc_id])
             if doc_id in dense_rank:
-                rrf_score += 1.0 / (RRF_K + dense_rank[doc_id])
+                rrf_score += DENSE_WEIGHT / (RRF_K + dense_rank[doc_id])
             fused.append((doc_id, rrf_score))
 
         fused.sort(key=lambda pair: -pair[1])

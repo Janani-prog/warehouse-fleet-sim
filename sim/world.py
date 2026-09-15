@@ -59,6 +59,9 @@ class World:
         self.order_gen = OrderGenerator(self.warehouse, self.rng, order_rate)
         self.telemetry = TelemetryLogger()
         self.tick_count = 0
+        # zone_id -> ticks remaining; populated only by the M8 agent loop's
+        # THROTTLE_ZONE_TRAFFIC action, never by anything else in the sim.
+        self.throttled_zones: dict[str, int] = {}
 
     def _target_for(self, robot: Robot) -> tuple[int, int] | None:
         if robot.order_id is None:
@@ -76,6 +79,8 @@ class World:
         for order in pending:
             if not idle_robots:
                 break
+            if self.warehouse.zone_id(*order.origin) in self.throttled_zones:
+                continue  # THROTTLE_ZONE_TRAFFIC in effect: defer, stays pending
             distances = [
                 abs(r.x - order.origin[0]) + abs(r.y - order.origin[1]) for r in idle_robots
             ]
@@ -87,6 +92,60 @@ class World:
             nearest.state = RobotState.MOVING
             idle_robots.remove(nearest)
             self.telemetry.log_event(tick, "order_assigned", order_id=order.id, robot_id=nearest.id)
+
+    def zone_stats(self) -> tuple[dict[str, int], dict[str, int]]:
+        """Live (queue_depth, robot_density) per zone - the same computation
+        sim._log_telemetry logs to disk every tick, exposed as a public
+        method too so the M8 agent loop's context builder (agent/context.py)
+        can read current state without duplicating the logic."""
+        queue_depth: dict[str, int] = {z: 0 for z in self.warehouse.zone_ids()}
+        density: dict[str, int] = {z: 0 for z in self.warehouse.zone_ids()}
+        for o in self.orders.values():
+            if o.status in (OrderStatus.PENDING, OrderStatus.ASSIGNED):
+                queue_depth[self.warehouse.zone_id(*o.origin)] += 1
+        for r in self.robots:
+            density[self.warehouse.zone_id(*r.pos)] += 1
+        return queue_depth, density
+
+    # --- M8 whitelisted action implementations -----------------------------
+    # Called only by agent/executor.py, only after the executor has already
+    # validated the action + target against a hard-coded whitelist enum and
+    # current simulator state (Locked Design Decision #4) - these methods
+    # trust their caller and do the minimal, focused thing the corresponding
+    # SOP describes.
+
+    def throttle_zone(self, zone_id: str, duration: int = 30) -> bool:
+        if zone_id not in self.warehouse.zone_ids():
+            return False
+        self.throttled_zones[zone_id] = duration
+        self.telemetry.log_event(self.tick_count, "zone_throttled", zone_id=zone_id, duration=duration)
+        return True
+
+    def reassign_order(self, order_id: int) -> bool:
+        order = self.orders.get(order_id)
+        if order is None or order.status != OrderStatus.ASSIGNED:
+            return False  # already picked up (or worse) - reassigning mid-carry makes no sense
+        robot = next((r for r in self.robots if r.id == order.assigned_robot), None)
+        prev_robot_id = order.assigned_robot
+        order.status = OrderStatus.PENDING
+        order.assigned_robot = None
+        order.assign_tick = None
+        if robot is not None:
+            robot.order_id = None
+            robot.state = RobotState.IDLE
+            robot.path = []
+        self.telemetry.log_event(
+            self.tick_count, "order_reassigned", order_id=order_id, previous_robot_id=prev_robot_id
+        )
+        return True  # picked back up by the normal nearest-idle-robot assignment next tick
+
+    def force_replan(self, robot_id: int) -> bool:
+        robot = next((r for r in self.robots if r.id == robot_id), None)
+        if robot is None:
+            return False
+        robot.path = []  # _move_robots recomputes from scratch since path is empty
+        self.telemetry.log_event(self.tick_count, "route_replanned", robot_id=robot_id)
+        return True
 
     def _replan_around_robots(self, robot: Robot, target: tuple[int, int]) -> list[tuple[int, int]] | None:
         """A* (or the configured planner) around every other robot's current
@@ -186,13 +245,7 @@ class World:
         for robot in self.robots:
             self.telemetry.log_robot(tick, robot.id, robot.x, robot.y, robot.state.value, robot.order_id)
 
-        queue_depth: dict[str, int] = {z: 0 for z in self.warehouse.zone_ids()}
-        density: dict[str, int] = {z: 0 for z in self.warehouse.zone_ids()}
-        for o in self.orders.values():
-            if o.status in (OrderStatus.PENDING, OrderStatus.ASSIGNED):
-                queue_depth[self.warehouse.zone_id(*o.origin)] += 1
-        for r in self.robots:
-            density[self.warehouse.zone_id(*r.pos)] += 1
+        queue_depth, density = self.zone_stats()
         for zone_id in self.warehouse.zone_ids():
             self.telemetry.log_zone(tick, zone_id, queue_depth[zone_id], density[zone_id])
 
@@ -201,6 +254,10 @@ class World:
         for order in self.order_gen.step(tick):
             self.orders[order.id] = order
             self.telemetry.log_event(tick, "order_arrived", order_id=order.id)
+        if self.throttled_zones:
+            self.throttled_zones = {
+                z: remaining - 1 for z, remaining in self.throttled_zones.items() if remaining - 1 > 0
+            }
         self._assign_orders(tick)
         self._move_robots(tick)
         self._resolve_pickups_dropoffs(tick)

@@ -1,0 +1,115 @@
+[
+  {
+    "case_id": "congestion-low-1",
+    "query_text": "Congestion risk, low severity. Calibrated confidence 0.31.",
+    "sop_doc_id": "congestion-low",
+    "candidates": {"zone_id": "Z_1_2", "zone_queue_depth": 8, "zone_density": 3, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "congestion-moderate-1",
+    "query_text": "Congestion risk, moderate severity. Calibrated confidence 0.58.",
+    "sop_doc_id": "congestion-moderate",
+    "candidates": {"zone_id": "Z_1_2", "zone_queue_depth": 10, "zone_density": 4, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "congestion-high-1",
+    "query_text": "Congestion risk, high severity. Calibrated confidence 0.91.",
+    "sop_doc_id": "congestion-high",
+    "candidates": {"zone_id": "Z_2_1", "zone_queue_depth": 15, "zone_density": 6, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "THROTTLE_ZONE_TRAFFIC"
+  },
+  {
+    "case_id": "congestion-critical-1",
+    "query_text": "Congestion risk, critical severity. Calibrated confidence 0.95. Rule-based backstop is firing this tick.",
+    "sop_doc_id": "congestion-critical",
+    "candidates": {"zone_id": "Z_0_3", "zone_queue_depth": 18, "zone_density": 7, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "THROTTLE_ZONE_TRAFFIC"
+  },
+  {
+    "case_id": "congestion-critical-dock-1",
+    "query_text": "Active orders backlog is critical and concentrated specifically at the dock zones near the spawn and drop-off points, other zones look normal.",
+    "sop_doc_id": "congestion-critical-dock",
+    "candidates": {"zone_id": null, "zone_queue_depth": 0, "zone_density": 0, "order_id": 501, "order_robot_id": 3, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "REASSIGN_TASK"
+  },
+  {
+    "case_id": "congestion-critical-dock-no-candidate-1",
+    "query_text": "Active orders backlog is critical and concentrated specifically at the dock zones near the spawn and drop-off points, other zones look normal.",
+    "sop_doc_id": "congestion-critical-dock",
+    "candidates": {"zone_id": null, "zone_queue_depth": 0, "zone_density": 0, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION",
+    "note": "SOP recommends REASSIGN_TASK but no reassignable order is offered this tick - the agent should refuse to guess an id."
+  },
+  {
+    "case_id": "congestion-high-crossaisle-1",
+    "query_text": "Congestion confidence is high, and the queue is building right at one of the narrow cross-aisle gap corridors between rack bands, not spread across the whole warehouse.",
+    "sop_doc_id": "congestion-high-crossaisle",
+    "candidates": {"zone_id": "Z_1_1", "zone_queue_depth": 9, "zone_density": 5, "order_id": null, "order_robot_id": null, "robot_id": 7, "robot_stuck_ticks": 3},
+    "expected_action": "REPLAN_ROUTE"
+  },
+  {
+    "case_id": "collision-low-1",
+    "query_text": "Collision risk, low severity. Calibrated confidence 0.22.",
+    "sop_doc_id": "collision-low",
+    "candidates": {"zone_id": "Z_2_2", "zone_queue_depth": 3, "zone_density": 2, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "collision-moderate-1",
+    "query_text": "Collision risk, moderate severity. Calibrated confidence 0.63.",
+    "sop_doc_id": "collision-moderate",
+    "candidates": {"zone_id": "Z_2_2", "zone_queue_depth": 4, "zone_density": 3, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "collision-high-1",
+    "query_text": "Collision risk, high severity. Calibrated confidence 0.88.",
+    "sop_doc_id": "collision-high",
+    "candidates": {"zone_id": "Z_1_3", "zone_queue_depth": 6, "zone_density": 8, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "THROTTLE_ZONE_TRAFFIC"
+  },
+  {
+    "case_id": "collision-critical-1",
+    "query_text": "Collision risk, critical severity. Calibrated confidence 0.85. Rule-based backstop is firing this tick.",
+    "sop_doc_id": "collision-critical",
+    "candidates": {"zone_id": "Z_1_3", "zone_queue_depth": 7, "zone_density": 9, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "THROTTLE_ZONE_TRAFFIC"
+  },
+  {
+    "case_id": "collision-critical-crossaisle-1",
+    "query_text": "Near-misses keep happening at the same single-cell aisle gap where two opposing robot flows meet head-on, tick after tick.",
+    "sop_doc_id": "collision-critical-crossaisle",
+    "candidates": {"zone_id": "Z_2_1", "zone_queue_depth": 5, "zone_density": 10, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "THROTTLE_ZONE_TRAFFIC"
+  },
+  {
+    "case_id": "collision-high-idle-robot-1",
+    "query_text": "A robot has been stuck and idle in a corridor for a while and other robots keep having to route around it, causing near-miss-like conflicts.",
+    "sop_doc_id": "collision-high-idle-robot",
+    "candidates": {"zone_id": null, "zone_queue_depth": 0, "zone_density": 0, "order_id": null, "order_robot_id": null, "robot_id": 4, "robot_stuck_ticks": 5},
+    "expected_action": "REPLAN_ROUTE"
+  },
+  {
+    "case_id": "false-positive-handling-1",
+    "query_text": "The anomaly trigger only fired for a single tick and the raw confidence trend was flat right before it, doesn't look like a real developing pattern.",
+    "sop_doc_id": "false-positive-handling",
+    "candidates": {"zone_id": "Z_0_0", "zone_queue_depth": 5, "zone_density": 2, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "escalation-human-operator-1",
+    "query_text": "A critical-severity anomaly has persisted for many consecutive ticks despite a whitelisted action already being taken.",
+    "sop_doc_id": "escalation-human-operator",
+    "candidates": {"zone_id": "Z_3_0", "zone_queue_depth": 20, "zone_density": 9, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  },
+  {
+    "case_id": "post-incident-review-1",
+    "query_text": "The congestion event has resolved and confidence has dropped back down for several ticks in a row, what is the follow-up procedure?",
+    "sop_doc_id": "post-incident-review",
+    "candidates": {"zone_id": "Z_0_2", "zone_queue_depth": 2, "zone_density": 1, "order_id": null, "order_robot_id": null, "robot_id": null, "robot_stuck_ticks": 0},
+    "expected_action": "NO_ACTION"
+  }
+]

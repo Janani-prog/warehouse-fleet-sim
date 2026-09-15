@@ -40,19 +40,41 @@ def run_paired_trials(
     order_rate: Callable[[int], float],
     forecaster_model_dir: str,
     agent_model: str = "llama3.1:8b",
+    checkpoint_path: str | Path | None = None,
 ) -> pd.DataFrame:
+    """Loop-ON trials pay a real LLM-call cost per triggered tick, so N=30
+    can run tens of minutes on CPU-only inference - long enough that this
+    environment has actually hit OOM kills mid-run (see CLAUDE.md's M9
+    note). `checkpoint_path`, if given, appends each pair's row to a CSV as
+    soon as it's computed, so a kill loses at most one in-flight pair
+    instead of the whole run - and a rerun with the same checkpoint_path
+    resumes from the seeds already recorded there rather than redoing them."""
     forecaster = Forecaster(forecaster_model_dir)
     retriever = HybridRetriever()
 
+    already_done: set[int] = set()
     rows: list[dict] = []
+    if checkpoint_path is not None:
+        checkpoint_path = Path(checkpoint_path)
+        if checkpoint_path.exists():
+            existing = pd.read_csv(checkpoint_path)
+            rows = existing.to_dict("records")
+            already_done = set(existing["seed"].tolist())
+
     for i in range(n_pairs):
         seed = seed_start + i
+        if seed in already_done:
+            continue
         off = run_trial(seed, ticks, robots, order_rate, forecaster, loop_enabled=False)
         on = run_trial(
             seed, ticks, robots, order_rate, forecaster, loop_enabled=True,
             retriever=retriever, agent_model=agent_model,
         )
-        rows.append(_trial_pair_row(seed, on, off))
+        row = _trial_pair_row(seed, on, off)
+        rows.append(row)
+        if checkpoint_path is not None:
+            pd.DataFrame(rows).to_csv(checkpoint_path, index=False)
+
     return pd.DataFrame(rows)
 
 
@@ -92,7 +114,13 @@ def run_and_report(
     agent_model: str = "llama3.1:8b",
 ) -> dict:
     order_rate = make_spike_rate(baseline_rate, spike_rate, spike_start, spike_end)
-    df = run_paired_trials(n_pairs, seed_start, ticks, robots, order_rate, forecaster_model_dir, agent_model)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = out / "causal_eval_trials.csv"  # doubles as the final trials CSV
+    df = run_paired_trials(
+        n_pairs, seed_start, ticks, robots, order_rate, forecaster_model_dir, agent_model,
+        checkpoint_path=checkpoint_path,
+    )
     report = build_report(df)
     report["scenario"] = {
         "ticks": ticks, "robots": robots, "baseline_rate": baseline_rate,
@@ -100,9 +128,8 @@ def run_and_report(
         "seed_start": seed_start,
     }
 
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out / "causal_eval_trials.csv", index=False)
+    # trials CSV already written incrementally at checkpoint_path during
+    # run_paired_trials - only the report JSON is written here.
     with open(out / "causal_eval_report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     return report

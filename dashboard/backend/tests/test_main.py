@@ -88,6 +88,50 @@ def test_forecaster_thresholds_reads_json(client, tmp_path, monkeypatch):
     assert resp.json() == {"congestion": 0.5, "collision": 0.6}
 
 
+def test_agent_decisions_reads_parquet(client, tmp_path):
+    run_dir = tmp_path / "run_e"
+    run_dir.mkdir(parents=True)
+    with open(run_dir / "manifest.json", "w") as f:
+        json.dump({"num_robots": 1}, f)
+    pd.DataFrame([
+        {"tick": 10, "anomaly_type": "congestion", "severity": "critical", "confidence": 0.9,
+         "sop_doc_id": "congestion-critical", "retrieval_score": 0.5, "action": "THROTTLE_ZONE_TRAFFIC",
+         "target_type": "zone", "target_id": "Z_0_0", "reason": "high queue", "executed": True,
+         "raw_llm_output": '{"action": "THROTTLE_ZONE_TRAFFIC"}'},
+    ]).to_parquet(run_dir / "agent_decisions.parquet", index=False)
+    resp = client.get("/api/runs/run_e/agent_decisions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["action"] == "THROTTLE_ZONE_TRAFFIC"
+    assert data[0]["executed"] is True
+
+
+def test_agent_decisions_missing_file_returns_empty_list(client, tmp_path):
+    _write_run(tmp_path / "run_f", {"num_robots": 1})
+    resp = client.get("/api/runs/run_f/agent_decisions")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_causal_eval_404_when_not_run_yet(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "CAUSAL_EVAL_DIR", tmp_path / "no_such_eval")
+    resp = client.get("/api/causal_eval")
+    assert resp.status_code == 404
+
+
+def test_causal_eval_reads_report_json(client, tmp_path, monkeypatch):
+    eval_dir = tmp_path / "causal_eval"
+    eval_dir.mkdir()
+    report = {"n_pairs": 30, "metrics": {"throughput": {"p_value": 0.01, "significant_at_0.05": True}}}
+    with open(eval_dir / "causal_eval_report.json", "w") as f:
+        json.dump(report, f)
+    monkeypatch.setattr(main, "CAUSAL_EVAL_DIR", eval_dir)
+    resp = client.get("/api/causal_eval")
+    assert resp.status_code == 200
+    assert resp.json() == report
+
+
 def test_kpis_computes_completion_rate_and_wait(client, tmp_path):
     _write_run(
         tmp_path / "run_d",

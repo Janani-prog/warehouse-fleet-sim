@@ -3,17 +3,24 @@ event rather than waiting for one to occur organically."""
 
 from __future__ import annotations
 
+from typing import Callable
+
 BASELINE_RATE = 0.15
 SPIKE_RATE = 0.6
 SPIKE_START = 200
 SPIKE_END = 260
 
 
-def congestion_spike_rate(tick: int) -> float:
-    """Healthy baseline order arrival rate, with an engineered burst of
-    demand from tick 200-260 - enough to push an 8-robot fleet (tuned for
-    the 0.15 baseline, see CLAUDE.md's throughput sweep) well past its
-    capacity and into a genuine, labeled congestion event shortly after."""
-    if SPIKE_START <= tick < SPIKE_END:
-        return SPIKE_RATE
-    return BASELINE_RATE
+def make_spike_rate(baseline: float, spike: float, start: int, end: int) -> Callable[[int], float]:
+    """Factory for a step-function order-arrival-rate scenario: baseline,
+    then an engineered burst from `start` to `end`, then back to baseline.
+    Factored out so M9's causal eval harness can use a shorter, compressed
+    version of the same shape without duplicating the spike logic."""
+
+    def rate(tick: int) -> float:
+        return spike if start <= tick < end else baseline
+
+    return rate
+
+
+congestion_spike_rate = make_spike_rate(BASELINE_RATE, SPIKE_RATE, SPIKE_START, SPIKE_END)

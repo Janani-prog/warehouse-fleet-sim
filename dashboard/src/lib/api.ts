@@ -82,6 +82,52 @@ export interface ForecasterThresholds {
   collision: number;
 }
 
+export type WhitelistedAction = "REASSIGN_TASK" | "REPLAN_ROUTE" | "THROTTLE_ZONE_TRAFFIC" | "NO_ACTION";
+
+export interface AgentDecisionRow {
+  tick: number;
+  anomaly_type: "congestion" | "collision_risk" | "concurrent";
+  severity: "low" | "moderate" | "high" | "critical";
+  confidence: number | null;
+  sop_doc_id: string | null;
+  retrieval_score: number | null;
+  action: WhitelistedAction;
+  target_type: "zone" | "order" | "robot" | null;
+  target_id: string | null;
+  reason: string | null;
+  executed: boolean;
+  raw_llm_output: string | null;
+}
+
+export interface CausalMetricResult {
+  n: number;
+  mean_delta: number;
+  median_delta: number;
+  std_delta: number;
+  wilcoxon_stat: number;
+  p_value: number;
+  cohens_d: number;
+  ci_95_low: number;
+  ci_95_high: number;
+  "significant_at_0.05": boolean;
+  lower_is_better: boolean;
+  interpretation: string;
+}
+
+export interface CausalEvalReport {
+  n_pairs: number;
+  metrics: Record<string, CausalMetricResult>;
+  scenario?: {
+    ticks: number;
+    robots: number;
+    baseline_rate: number;
+    spike_rate: number;
+    spike_start: number;
+    spike_end: number;
+    seed_start: number;
+  };
+}
+
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) {
@@ -99,4 +145,6 @@ export const api = {
   forecast: (runId: string) => getJSON<ForecastRow[]>(`/api/runs/${runId}/forecast`),
   kpis: (runId: string) => getJSON<Kpis>(`/api/runs/${runId}/kpis`),
   forecasterThresholds: () => getJSON<ForecasterThresholds>("/api/forecaster/thresholds"),
+  agentDecisions: (runId: string) => getJSON<AgentDecisionRow[]>(`/api/runs/${runId}/agent_decisions`),
+  causalEval: () => getJSON<CausalEvalReport>("/api/causal_eval"),
 };

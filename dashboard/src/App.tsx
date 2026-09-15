@@ -5,7 +5,8 @@ import { api, type RunSummary } from "./lib/api";
 import { FleetMapView } from "./views/FleetMapView";
 import { KpisView } from "./views/KpisView";
 import { AnomalyTimelineView } from "./views/AnomalyTimelineView";
-import { ComingSoonView } from "./views/ComingSoonView";
+import { AgentActionLogView } from "./views/AgentActionLogView";
+import { CausalEvalView } from "./views/CausalEvalView";
 
 const VIEW_TITLES: Record<ViewId, string> = {
   fleet_map: "Fleet Map",
@@ -43,6 +44,8 @@ function App() {
         <div className="max-w-[1200px] mx-auto w-full">
           {error ? (
             <p className="text-[13px] text-error">{error}</p>
+          ) : view === "causal_eval" ? (
+            <CausalEvalView />
           ) : !selectedRunId ? (
             <p className="text-[13px] text-secondary">No runs found under data/runs/. Run a scenario first.</p>
           ) : view === "fleet_map" ? (
@@ -52,7 +55,7 @@ function App() {
           ) : view === "anomaly_timeline" ? (
             <AnomalyTimelineView runId={selectedRunId} />
           ) : (
-            <ComingSoonView title={VIEW_TITLES[view]} />
+            <AgentActionLogView runId={selectedRunId} />
           )}
         </div>
       </main>

@@ -28,10 +28,10 @@ export function TopBar({ runs, selectedRunId, onSelectRun, title }: Props) {
       </div>
       <div className="flex items-center gap-4">
         <span
-          title="Correction loop lands in Part 2 — the agent, RAG retrieval, and action executor aren't built yet."
-          className="flex items-center gap-1.5 text-[12px] font-medium text-outline cursor-not-allowed select-none"
+          title="RAG retrieval, the LLM agent, and the action executor are built (Part 2) — this badge is static chrome, not a live status check. See the Agent Action Log view to check whether the currently selected run actually triggered the closed loop."
+          className="flex items-center gap-1.5 text-[12px] font-medium text-secondary select-none"
         >
-          Correction Loop: Off (Part 2)
+          Correction Loop: Part 2
         </span>
         <div className="h-4 w-px bg-outline-variant" />
         <span className="flex items-center gap-1.5 text-[12px] text-secondary">

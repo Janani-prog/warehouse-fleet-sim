@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type Kpis, type OrderRow, type RobotRow, type Warehouse } from "../lib/api";
+import { api, type Kpis, type OrderRow, type RobotRow, type TickRow, type Warehouse } from "../lib/api";
 import { KpiCard } from "../components/KpiCard";
 import { PauseIcon, PlayIcon } from "../components/icons";
 
@@ -15,6 +15,7 @@ export function FleetMapView({ runId }: { runId: string }) {
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
   const [robots, setRobots] = useState<RobotRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [ticks, setTicks] = useState<TickRow[]>([]);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [tick, setTick] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -27,11 +28,12 @@ export function FleetMapView({ runId }: { runId: string }) {
   useEffect(() => {
     setTick(0);
     setPlaying(true);
-    Promise.all([api.robots(runId), api.orders(runId), api.kpis(runId)]).then(
-      ([robotsData, ordersData, kpisData]) => {
+    Promise.all([api.robots(runId), api.orders(runId), api.kpis(runId), api.ticks(runId)]).then(
+      ([robotsData, ordersData, kpisData, ticksData]) => {
         setRobots(robotsData);
         setOrders(ordersData);
         setKpis(kpisData);
+        setTicks(ticksData);
       }
     );
   }, [runId]);
@@ -58,7 +60,14 @@ export function FleetMapView({ runId }: { runId: string }) {
     };
   }, [playing, maxTick]);
 
+  const ticksByTick = useMemo(() => {
+    const map = new Map<number, TickRow>();
+    for (const t of ticks) map.set(t.tick, t);
+    return map;
+  }, [ticks]);
+
   const currentRobots = robotsByTick.get(tick) ?? [];
+  const currentNearMissCount = ticksByTick.get(tick)?.near_miss_count ?? 0;
   const activeOriginPins = useMemo(
     () =>
       orders.filter(
@@ -86,9 +95,9 @@ export function FleetMapView({ runId }: { runId: string }) {
         <KpiCard label="Active Robots" value={`${currentRobots.filter((r) => r.state !== "idle").length}`} unit={`/ ${kpis?.num_robots ?? "—"}`} />
         <KpiCard
           label="Near-Misses"
-          value={`${currentRobots.filter((r) => r.state === "blocked").length}`}
-          unit="blocked now"
-          accent
+          value={`${currentNearMissCount}`}
+          unit="this tick"
+          accent={currentNearMissCount > 0}
         />
       </div>
 
